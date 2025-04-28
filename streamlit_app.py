@@ -4,7 +4,7 @@ from huggingface_hub import hf_hub_download
 from transformers import AutoTokenizer
 
 # Access the Hugging Face token from Streamlit secrets
-HF_TOKEN = st.secrets["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"]
+HF_TOKEN = st.secrets["hf_token"]
 
 # Initialize the tokenizer (assuming a BERT-based model, adjust as needed)
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
