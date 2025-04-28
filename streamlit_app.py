@@ -1,78 +1,44 @@
 import streamlit as st
 import torch
-from transformers import BertTokenizer, BertForSequenceClassification
+from huggingface_hub import hf_hub_download
 
-# Load model and tokenizer
-model_path = 'models/best_model.pt'
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=6)
-model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))  # CPU for portability
-model.eval()
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model.to(device)
+# Cache the model to avoid reloading it on every run
+@st.cache_resource
+def load_model():
+    # Download the model file from Hugging Face
+    model_path = hf_hub_download(repo_id="eymenslimani/toxic-commentator", filename="best-mini.pt")
+    # Load the model (customize this based on how you saved it)
+    model = torch.load(model_path, map_location=torch.device('cpu'))  # Use CPU for Streamlit Cloud
+    model.eval()  # Set to evaluation mode
+    return model
 
-# Define labels
-labels = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
+# Load the model
+model = load_model()
 
 # Streamlit UI
-st.title("Toxic Comment Classifier")
-st.markdown("Enter a comment below to analyze its toxicity levels.")
+st.title("Toxic Comment Detector")
+st.write("Enter a comment below to check if it's toxic.")
 
-# Input area
-comment = st.text_area("Comment", height=150, placeholder="Type your comment here...")
+# Text input from user
+user_input = st.text_area("Comment:", height=100)
 
-if st.button("Classify"):
-    if comment:
-        # Tokenize input
-        encoding = tokenizer.encode_plus(
-            comment,
-            add_special_tokens=True,
-            max_length=256,
-            padding='max_length',
-            truncation=True,
-            return_attention_mask=True,
-            return_tensors='pt'
-        )
-        input_ids = encoding['input_ids'].to(device)
-        attention_mask = encoding['attention_mask'].to(device)
+if st.button("Analyze"):
+    if user_input:
+        # Preprocess the input (customize this based on your model's requirements)
+        # Example: tokenization, converting to tensor, etc.
+        # input_tensor = preprocess(user_input)  # Replace with your preprocessing logic
         
-        # Predict
+        # Dummy preprocessing placeholder (replace this)
+        # For example, if your model expects a tensor, you might need a tokenizer
+        input_tensor = user_input  # Replace with actual preprocessing
+        
+        # Make prediction
         with torch.no_grad():
-            outputs = model(input_ids, attention_mask=attention_mask)
-            logits = outputs.logits
-            probs = torch.sigmoid(logits).cpu().numpy()[0]
+            prediction = model(input_tensor)  # Replace with your model's inference logic
         
-        # Display results
-        st.subheader("Toxicity Analysis:")
-        for label, prob in zip(labels, probs):
-            st.write(f"{label.capitalize()}: {prob:.2%}")
-            st.progress(prob)
-        
-        # Toxicity warning
-        if any(prob > 0.5 for prob in probs):
-            st.error("⚠️ This comment contains toxic content!")
-        else:
-            st.success("✅ This comment appears safe.")
+        # Display result (customize based on your model's output)
+        # Assuming a binary classification (toxic > 0.5, non-toxic <= 0.5)
+        result = "Toxic" if prediction > 0.5 else "Non-Toxic"
+        st.write("Prediction:", result)
     else:
-        st.warning("Please enter a comment to classify.")
-
-# Custom styling
-st.markdown("""
-    <style>
-    .stApp {
-        background-color: #f5f7fa;
-        padding: 20px;
-        border-radius: 10px;
-    }
-    .stButton>button {
-        background-color: #007bff;
-        color: white;
-        border-radius: 8px;
-        padding: 10px 20px;
-    }
-    .stTextArea textarea {
-        border-radius: 8px;
-        border: 1px solid #ced4da;
-    }
-    </style>
-""", unsafe_allow_html=True)
+        st.write("Please enter a comment to analyze.")
