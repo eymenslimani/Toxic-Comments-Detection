@@ -31,7 +31,7 @@ def load_model():
     # Initialize the model architecture
     model = AutoModelForSequenceClassification.from_pretrained(
         "bert-base-uncased",
-        num_labels=len(TOXICITY_LABELS)
+        num_labels=len(TOXICITY_LABELS))
     
     # Load the saved state_dict into the model
     state_dict = torch.load(model_path, map_location='cpu')
