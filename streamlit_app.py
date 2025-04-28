@@ -1,30 +1,40 @@
 import streamlit as st
 import torch
 from huggingface_hub import hf_hub_download
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # Access the Hugging Face token from Streamlit secrets
 HF_TOKEN = st.secrets["hf_token"]
 
-# Initialize the tokenizer (assuming a BERT-based model, adjust as needed)
+# Initialize the tokenizer
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 
-# Cache the model to avoid reloading it on every run
 @st.cache_resource
 def load_model():
-    # Download the model file from Hugging Face using the token
+    # Download the model file
     model_path = hf_hub_download(
-        repo_id="eymenslimani/toxic-commentator",  # Your private repo ID
-        filename="best-mini.pt",                  # Your model file name
-        token=HF_TOKEN                            # Authenticate with the token
+        repo_id="eymenslimani/toxic-commentator",
+        filename="best-mini.pt",
+        token=HF_TOKEN
     )
-    # Load the model (assuming it's a PyTorch model, adjust if necessary)
-    model = torch.load(model_path, map_location=torch.device('cpu'))  # Use CPU for Streamlit Cloud
-    model.eval()  # Set to evaluation mode
+    
+    # Initialize the model architecture
+    model = AutoModelForSequenceClassification.from_pretrained(
+        "bert-base-uncased",
+        num_labels=6  # Adjust this to match your model's number of classes
+    )
+    
+    # Load the saved state_dict into the model
+    state_dict = torch.load(model_path, map_location='cpu')
+    model.load_state_dict(state_dict)
+    
+    # Set to evaluation mode
+    model.eval()
     return model
 
 # Load the model
 model = load_model()
+
 
 # Streamlit UI
 st.title("Toxic Comment Detector")
