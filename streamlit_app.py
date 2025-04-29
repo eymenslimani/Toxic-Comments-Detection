@@ -1,7 +1,17 @@
 import streamlit as st
 import torch
-from huggingface_hub import hf_hub_download
+import requests
+from huggingface_hub import hf_hub_download, configure_http_backend
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+# Temporary fix: Disable SSL verification due to connection issues
+# Note: This is not secure and should be used only as a temporary measure
+def backend_factory() -> requests.Session:
+    session = requests.Session()
+    session.verify = False
+    return session
+
+configure_http_backend(backend_factory=backend_factory)
 
 # Access the Hugging Face token from Streamlit secrets
 HF_TOKEN = st.secrets["hf_token"]
